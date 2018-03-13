@@ -68,6 +68,20 @@ loop
 	CMP r0, #0x71
 	BEQ stop
 	B loop
+
+init_seven_segment
+	STMFD SP!, {lr}
+
+loop_seven_segment
+
+	
+
+	B loop_seven_segment
+
+end_seven_segment
+
+	LDMFD SP!, {lr}
+	BX lr
 	
 init_color
 	STMFD SP!,{lr}

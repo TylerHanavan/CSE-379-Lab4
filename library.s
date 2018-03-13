@@ -426,12 +426,68 @@ illuminate_reset
         LDMFD SP!, {r0}
         LDMFD SP!, {lr}
         BX lr
-	
 
 
+output_to_decimal
+	STMFD SP!, {lr}
+	STMFD SP!, {r0}
+	STMFD SP!, {r1}
+	STMFD SP!, {r2}
+	MOV r2, r0
+	MOV r0, #0
+otd_loop_1000
+	MOV r1, #1000
+	CMP r2, r1
+	BGT otd_loop_1000_skip
 
+	SUB r2, r2, r1
+	ADD r0, r0, #1
 
+otd_loop_1000_skip
+	BL output_character
+	MOV r0, #0
 
+otd_loop_100
+        MOV r1, #100
+        CMP r2, r1
+        BGT otd_loop_100_skip
+
+        SUB r2, r2, r1
+        ADD r0, r0, #1
+
+otd_loop_100_skip
+        BL output_character
+        MOV r0, #0
+
+otd_loop_10
+        MOV r1, #10
+        CMP r2, r1
+        BGT otd_loop_10_skip
+
+        SUB r2, r2, r1
+        ADD r0, r0, #1
+
+otd_loop_10_skip
+        BL output_character
+        MOV r0, #0
+
+otd_loop_1
+        MOV r1, #1
+        CMP r2, r1
+        BGT otd_loop_1_skip
+
+        SUB r2, r2, r1
+        ADD r0, r0, #1
+
+otd_loop_1_skip
+        BL output_character
+        MOV r0, #0
+
+	LDMFD SP!, {r2}
+	LDMFD SP!, {r1}
+	LDMFD SP!, {r0}
+	LDMFD SP!, {lr}
+	BX lr
 
 
 
