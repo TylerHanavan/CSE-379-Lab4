@@ -10,6 +10,12 @@
 	EXPORT read_num_from_btns
 	EXPORT clear_display
 	EXPORT change_display
+	EXPORT illuminate_red
+	EXPORT illuminate_green
+	EXPORT illuminate_blue
+	EXPORT illuminate_yellow
+	EXPORT illuminate_white
+	EXPORT illuminate_purple
 
 input = "                ",0		;input string with 16 max characters
 
@@ -172,6 +178,11 @@ setup_pins
 	BIC r2, r2, r3
 	STR r2, [r1]
 
+	LDR r1, =0xE0028008			;IODIR for RGBLED
+	LDR r2, [r1]
+	MOV r3, #13 LSL 21
+	STR r3, [r1]
+
 	LDMFD sp!, {r3}
 	LDMFD sp!, {r2}
 	LDMFD sp!, {r1}
@@ -290,7 +301,7 @@ read_bit_end
 	LDMFD sp!, {lr}
 	BX lr
 
-change_display
+change_display				;Displays hex value passed in r0
 	STMFD SP!,{lr}
 	STMFD SP!,{r1}
 	STMFD SP!,{r3}
@@ -308,7 +319,124 @@ change_display
 	LDMFD sp!, {lr}
 	BX lr
 
+illuminate_red
+	STMFD SP!, {lr}
+	STMFD SP!, {r0}
+	STMFD SP!, {r1}
+	STMFD SP!, {r2}
+
+	BL illuminate_reset
+
+	LDR r0, =0xE002801C	
+	LDR r1, [r0]
+	MOV r2, #0x1 LSL #17 
+	OR r1, r1, r2
+	STR r1, [r0]	
+
+	LDMFD SP!, {r2}
+	LDMFD SP!, {r1}
+	LDMFD SP!, {r0}
+	LDMFD SP!, {lr}
+	BX lr
 
 
+illuminate_blue
+        STMFD SP!, {lr}
+        STMFD SP!, {r0}
+        STMFD SP!, {r1}
+        STMFD SP!, {r2}
+
+	BL illuminate_reset
+
+        LDR r0, =0xE002801C
+        LDR r1, [r0]
+        MOV r2, #0x1 LSL #18
+        OR r1, r1, r2
+        STR r1, [r0]
+
+        LDMFD SP!, {r2}
+        LDMFD SP!, {r1}
+        LDMFD SP!, {r0}
+        LDMFD SP!, {lr}
+        BX lr
+
+
+illuminate_green
+        STMFD SP!, {lr}
+        STMFD SP!, {r0}
+        STMFD SP!, {r1}
+        STMFD SP!, {r2}
+
+	BL illuminate_reset
+
+        LDR r0, =0xE002801C
+        LDR r1, [r0]
+        MOV r2, #0x1 LSL #21
+        OR r1, r1, r2
+        STR r1, [r0]
+
+        LDMFD SP!, {r2}
+        LDMFD SP!, {r1}
+        LDMFD SP!, {r0}
+        LDMFD SP!, {lr}
+        BX lr
+
+illuminate_white
+	STMFD SP!, {lr}
+
+	BL illuminate_green
+	BL illuminate_blue
+	BL illuminate_red
+
+	LDMFD SP!, {lr}
+	BX lr
+
+illuminate_purple
+	STMFD SP!, {lr}
+
+	BL illuminate_red
+	BL illuminate_blue
+
+	LDMFD SP!, {lr}
+	BX lr
+
+illuminate_yellow
+        STMFD SP!, {lr}
+
+        BL illuminate_green
+        BL illuminate_blue
+
+        LDMFD SP!, {lr}
+        BX lr
+
+illuminate_reset
+        STMFD SP!, {lr}
+        STMFD SP!, {r0}
+        STMFD SP!, {r1}
+        STMFD SP!, {r2}
+
+        LDR r0, =0xE0028018
+        LDR r1, [r0]
+        MOV r2, #0x13 LSL #21
+        OR r1, r1, r2
+        STR r1, [r0]
+
+        LDMFD SP!, {r2}
+        LDMFD SP!, {r1}
+        LDMFD SP!, {r0}
+        LDMFD SP!, {lr}
+        BX lr
 	
+
+
+
+
+
+
+
+
+
+
+
+
 	END
