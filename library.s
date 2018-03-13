@@ -111,8 +111,9 @@ setup_pins
 	STMFD SP!,{r1}
 	STMFD SP!,{r2}	
 
-	LDR r1, 0xE002C004
-	;MOV r2, 0x2
+	LDR r1, =0xE002C004
+	LDR r2, [r1]
+	AND r2, r2, 0xFFFF0000
 	STR r2, [r1]
 
 	LDMFD sp!, {r2}
