@@ -17,6 +17,7 @@
 		EXTERN illuminate_yellow
 		EXTERN illuminate_white
 		EXTERN illuminate_purple
+		EXTERN illuminate_reset
 PIODATA EQU 0x8 ; Offset to parallel I/O data regis
 prompt = "Welcome to lab #4  ",0
 color = "Press 'c' to change a color",0
@@ -60,7 +61,8 @@ lab4
 	  BEQ stop
 	  
 	  BL setup_pins
-	  
+	  BL illuminate_reset
+
 loop	
 	
 	BL read_character
@@ -85,6 +87,10 @@ loop_seven_segment
 
 	BL output_character	
 	SUB r0, r0, #0x30
+	CMP r0, #0x0
+	BLT loop_seven_segment
+	CMP r0, #0xF
+	BGT loop_seven_segment
 	BL change_display
 
 	B loop_seven_segment

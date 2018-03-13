@@ -16,7 +16,7 @@
 	EXPORT illuminate_yellow
 	EXPORT illuminate_white
 	EXPORT illuminate_purple
-
+	EXPORT illuminate_reset
 input = "                ",0		;input string with 16 max characters
 
 	ALIGN
