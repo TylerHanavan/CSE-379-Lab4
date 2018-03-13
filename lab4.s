@@ -21,9 +21,11 @@ PIODATA EQU 0x8 ; Offset to parallel I/O data regis
 prompt = "Welcome to lab #4  ",0
 color = "Press 'c' to change a color",0
 leds = "Press 'l' to modify LEDs",0
-rgb = "Press 's' to change the seven-segment display",0
+segment = "Press 's' to change the seven-segment display",0
 quit = "Press 'q' at anytime to quit",0
-pick_color = "Pick a color: [w : white, b : blue, g : green, r : red, p : purple, y : yellow]",0     
+pick_color = "Pick a color: [w : white, b : blue, g : green, r : red, p : purple, y : yellow]",0
+menu = "Press 'm' to return to the main menu at any time",0
+display = "Enter a hexadecimal character to display (capitalized)",0      
       ALIGN 
 digits_SET   
         DCD 0x00003780  ; 0 
@@ -74,7 +76,16 @@ init_seven_segment
 
 loop_seven_segment
 
-	
+	BL read_character
+	CMP r0, #0x6D
+	BEQ end_seven_segment
+
+	CMP r0, #0x71
+	BEQ stop
+
+	BL output_character	
+	SUB r0, r0, #0x30
+	BL change_display
 
 	B loop_seven_segment
 
