@@ -131,6 +131,8 @@ read_from_push_btns
 	LDMFD sp!,{lr}
 	BX lr
 
+
+
 read_bit				;reads and checks if bit locations specified in r5 are set to '1' in r4
 	STMFD SP!,{lr}
 	STMFD SP!,{r3}
