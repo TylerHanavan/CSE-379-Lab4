@@ -8,6 +8,8 @@
 	EXPORT setup_pins
 	EXPORT read_from_push_btns
 	EXPORT read_num_from_btns
+	EXPORT clear_display
+	EXPORT change_display
 
 input = "                ",0		;input string with 16 max characters
 
@@ -287,5 +289,26 @@ read_bit_end
 	LDMFD sp!, {r3}
 	LDMFD sp!, {lr}
 	BX lr
+
+change_display
+	STMFD SP!,{lr}
+	STMFD SP!,{r1}
+	STMFD SP!,{r3}
+	STMFD SP!,{r2}
+
+	LDR r1, =0xE0028000 		; Base address 
+	LDR r3, =digits_SET 
+	MOV r0, r0, LSL #2 		; Each stored value is 32 bits 
+	LDR r2, [r3, r0]   		; Load IOSET pattern for digit in r0 
+	STR r2, [r1, #4]   		; Display (0x4 = offset to IOSET) 
+
+	LDMFD sp!, {r2}
+	LDMFD sp!, {r3}
+	LDMFD sp!, {r1}
+	LDMFD sp!, {lr}
+	BX lr
+
+
+
 	
 	END
