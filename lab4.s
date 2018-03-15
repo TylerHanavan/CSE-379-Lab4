@@ -5,7 +5,6 @@
 		EXTERN read_character
 		EXTERN output_string
 		EXTERN output_character
-		EXTERN read_bit
 		EXTERN setup_pins
 		EXTERN read_from_push_btns
 		EXTERN read_num_from_btns
@@ -24,11 +23,11 @@
 		EXTERN new_line
 PIODATA EQU 0x8 ; Offset to parallel I/O data regis
 prompt = "Welcome to lab #4  ",0
-color = "Press 'c' to change a color",0
-leds = "Press 'l' to modify LEDs",0
-segment = "Press 's' to change the seven-segment display",0
-quit = "Press 'q' at anytime to quit",0
-pick_color = "Pick a color: [w : white, b : blue, g : green, r : red, p : purple, y : yellow]",0
+color = "(c) : Pick a color for RGB-LED",0
+leds = "(l) : Modify LEDs and display value in decimal (press & hold buttons prior to this option)",0
+segment = "(s) : To display a hexadecimal number (LETTERS IN CAPS ONLY)",0
+quit = "(q) : Quit the program",0
+pick_color = "Pick a color: [w : white, b : blue, g : green, r : red, p : purple, y : yellow, d : off]",0
 menu = "Press 'm' to return to the main menu at any time",0
 display = "Enter a hexadecimal character to display (capitalized)",0      
 goodbye = "Exiting program, goodbyte!",0
@@ -52,19 +51,16 @@ lab4
 	  	  
 	BL setup_pins
 	BL illuminate_reset
+	
+	BL illuminate_white
 
 	BL clear_display
 	  
 	;BL read_character
 	
 	;BL output_character	
-help
-	LDR r4, =color
-	BL output_string
-	LDR r4, =segment
-	BL output_string
-	LDR r4, =leds
-	BL output_string
+
+	BL display_menu
 
 loop	
 	
@@ -81,6 +77,23 @@ loop
 	CMP r0, #0x71
 	BEQ stop
 	B loop
+	
+display_menu
+	STMFD SP!, {lr}
+	
+	BL new_line
+
+	LDR r4, =color
+	BL output_string
+	LDR r4, =segment
+	BL output_string
+	LDR r4, =leds
+	BL output_string
+	LDR r4, =quit
+	BL output_string
+
+	LDMFD SP!, {lr}
+	BX lr
 
 init_seven_segment
 	STMFD SP!, {lr}
@@ -98,6 +111,7 @@ loop_seven_segment
 	BEQ stop
 
 	BL output_character	
+	BL new_line
 	CMP r0, #0x30
 	BLT loop_seven_segment
 	CMP r0, #0x46
@@ -117,8 +131,8 @@ lss_skip
 	BL change_display
 
 end_seven_segment
-	LDR r4, =returning_menu
-	BL output_string
+
+	BL display_menu
 
 	LDMFD SP!, {lr}
 	BX lr
@@ -129,6 +143,8 @@ init_led
 	BL read_num_from_btns
 	BL output_to_decimal
 	BL new_line
+	
+	BL display_menu
 
 	LDMFD SP!, {lr}
 	BX lr
@@ -154,11 +170,16 @@ loop_color
 	BEQ color_green
 	CMP r0, #0x70
 	BEQ color_purple
+	CMP r0, #0x64
+	BEQ color_off
 	CMP r0, #0x71
 	BEQ stop
 
 	B loop_color
 
+color_off
+	BL illuminate_reset
+	B color_end
 
 color_red
 	LDR r4, =red
@@ -203,8 +224,8 @@ color_yellow
 	B color_end
 
 color_end	
-	LDR r4, =returning_menu
-	BL output_string
+
+	BL display_menu
 
 	LDMFD SP!,{lr}
 	BX lr
@@ -213,7 +234,7 @@ stop
 	LDR r4, =goodbye
 	BL output_string
 	
-	  
-      LDMFD SP!, {lr}   ; Restore register lr from stack     
-      BX LR 
-      END 
+  
+  LDMFD SP!, {lr}   ; Restore register lr from stack     
+  BX LR 
+  END 

@@ -4,7 +4,6 @@
 	EXPORT read_character
 	EXPORT output_string
 	EXPORT output_character
-	EXPORT read_bit
 	EXPORT setup_pins
 	EXPORT read_from_push_btns
 	EXPORT read_num_from_btns
@@ -178,10 +177,14 @@ setup_pins
 	STR r2, [r1]
 
 	LDR r1, =0xE0028008			;IODIR for Seven-Seg
-	LDR r2, [r1]
+	;LDR r2, [r1]
 	LDR r3, =0x26B784
 	STR r3, [r1]
-
+	
+	LDR r1, =0xE0028018
+	LDR r3, =0xF0000
+	STR r3, [r1]
+ 
 	;LDR r1, =0xE0028008			;IODIR for RGBLED
 	;LDR r2, [r1]
 	;MOV r3, #0x26
@@ -192,102 +195,154 @@ setup_pins
 	BX lr 
 
 read_from_push_btns
-	STMFD SP!,{lr, r1}
+	STMFD SP!,{lr, r1, r4, r5}
 	
 	LDR r1, =0xE0028010		;IO1PIN
-	LDR r1, [r1]
-	MVN r1, r1
-	AND r1, r1, #0xF00000
-	MOV r0, r1, LSR #20
+	LDR r1, [r1]				; Load memory contents of IO1PIN to r1
+	MVN r1, r1					;Negate r1
+	AND r1, r1, #0xF00000		;Clear all bits besides the 6th byte's bits
+	MOV r0, r1, LSR #20			;Logical shift right r1 and store in r0
+	MOV r1, r0					;Copy r0 to r1
 	
-	;MOV r5, #22
-	;MOV r4, r1
-	;BL read_bit
+	BL clear_leds				;clear the leds
 	
-	;MVN r0, r0
-	;ADD r0, r0, #1
-	;AND r0, r0, 0xF
+l23_pushed
 
-	LDMFD sp!,{lr, r1}
+	AND r1, r1, #1				;AND r1 against #1 and store r1
+	CMP r1, #1
+	BNE l22_pushed				;Branch to l22_pushed if r1 != #1
+	
+	MOV r4, #16					;Copy 16 dec. to r4
+	MOV r5, #1					;Copy 1 to r5
+	
+	BL led_set					;Set bit at r4 to value at r5
+	
+l22_pushed
+
+	MOV r1, r0					;Copy r0 to r1
+
+	AND r1, r1, #2  			;AND r1 against #2 and store r1
+	CMP r1, #2
+	BNE l21_pushed				;Branch to l21_pushed if r1 != #2
+	
+	MOV r4, #17					;Copy #17 to r4
+	MOV r5, #1					;Copy #1 to r5
+	
+	BL led_set					;Set bit at r4 to value at r5
+	
+l21_pushed
+
+	MOV r1, r0					;Copy r0 to r1
+
+	AND r1, r1, #4  			;AND r1 against #4 and store r1
+	CMP r1, #4		
+	BNE l20_pushed				;Branch to l20_pushed if r1 != #4				
+	
+	MOV r4, #18					;Copy 18 dec. to r4
+	MOV r5, #1					;Copy 1 to r5
+	
+	BL led_set					;Set bit at r4 to value at r5
+	
+l20_pushed
+
+	MOV r1, r0					;Copy r0 to r1
+
+	AND r1, r1, #8				;And r1 against 8
+	CMP r1, #8					
+	BNE rfpb_end				;Branch to rfpb_end if r1 != 8
+	
+	MOV r4, #19					;Copy #19 dec. to r4
+	MOV r5, #1					;Move #1 to r5
+	
+	BL led_set					;Set led at r4 to value at r5
+	
+rfpb_end
+
+	LDMFD sp!,{lr, r1, r4, r5}
 	BX lr
 
 read_num_from_btns
 	STMFD SP!,{lr, r1, r2, r3}
 	
-	MOV r3, #0
+	MOV r3, #0						;Copy 0 to r3
 	
-	BL read_from_push_btns
+	BL read_from_push_btns			
 	
-	AND r1, r0, #8
+	AND r1, r0, #8					;AND r0 & #8 and store in r1. To check if a certain bit is set
 	
 	CMP r1, #8
-	BNE rnf_add_8_skip
+	BNE rnf_add_8_skip				;Branch to rnf_add_8_skip if r1 != #8
 
 rnf_add_8
-	ADD r3, r3, #1
+	ADD r3, r3, #1					;Increment r3
 rnf_add_8_skip
-	AND r1, r0, #4
+	AND r1, r0, #4					;AND r0 & #4, store results to r1. To check if a certain bit is set
 	
 	CMP r1, #4
-	BNE rnf_add_4_skip
+	BNE rnf_add_4_skip				;Branch to rnf_add_4_skip if r1 != #4
 	
 rnf_add_4
-	ADD r3, r3, #2
+	ADD r3, r3, #2					;ADD r3 + #2, store results to r3
 rnf_add_4_skip
-	AND r1, r0, #2
+	AND r1, r0, #2					;AND r0 & #2, store results to r1. To check if a certain bit is set
 	
 	CMP r1, #2
-	BNE rnf_add_2_skip
+	BNE rnf_add_2_skip				;Branch to rnf_add_2_skip if r1 != #2
 	
 rnf_add_2
-	ADD r3, r3, #4
+	ADD r3, r3, #4					;ADD r3 + 4
 rnf_add_2_skip
-	AND r1, r0, #1
+	AND r1, r0, #1					;AND r0 against #1, store r1. To check if a certain bit is set
 	
 	CMP r1, #1
-	BNE rnf_add_1_skip
+	BNE rnf_add_1_skip				;Branch to rnf_add_1_skip if r1 != #1
 	
 rnf_add_1
-	ADD r3, r3, #8
+	ADD r3, r3, #8					;Add 8 to r3
 rnf_add_1_skip
 
-	MOV r0, r3
+	MOV r0, r3						;Copy r3 to r0 to return result and preserve r3
 
 	LDMFD sp!,{lr, r1, r2, r3}
 	BX lr
+	
+clear_leds							;Clears all LEDS. Values in r4 are LEDs to clear
+	STMFD SP!, {lr, r4, r5}
 
+	MOV r5, #0						;Copy 0 to r5
+	MOV r4, #16						;Copy #16 dec. to r4
+	BL led_set						
+	MOV r4, #17						;Copy #17 tp r4
+	BL led_set
+	MOV r4, #18						;Copy #18 to r4
+	BL led_set
+	MOV r4, #19						;Copy #19 to r4
+	BL led_set	
+
+	LDMFD SP!, {lr, r4, r5}
+	BX lr
+	
 led_set					;set LED at bit r4 to value at bit r5
 	STMFD SP!,{lr, r2, r3}
 	
-	CMP r5, #0
-	BEQ low
+	MOV r2, #1					;#1 -> r2
+	
+	CMP r5, #0					
+	BEQ low						;Branch to low if r5 == #0
 	
 high
-	LDR r3, =0xE0028014
-	;MOV r2, #1 LSL r4
-	STR r2, [r3]
+	LDR r3, =0xE002801C			;P1xCLR to r3
+	MOV r2, r2, LSL r4			;Logical shift left r2 by r4
+	STR r2, [r3]				;Store results in P1xCLR
+	B led_set_end
 low
-	LDR r3, =0xE002800C
-	;MOV r2, #1 LSL r4
-	STR r2, [r3]
+	LDR r3, =0xE0028014			;P1xSET to r3
+	MOV r2, r2, LSL r4			;Logical shift left r2 by r4
+	STR r2, [r3]				;Store results in r3
+led_set_end
 	LDMFD sp!, {lr, r2, r3}
 	BX lr
 
-read_bit				;reads and checks if bit locations specified in r5 are set to '1' in r4
-	STMFD SP!,{lr, r3}
-	MOV r3, r4
-	AND r4, r4, r5
-	CMP r4, #0x0
-	BEQ read_bit_ret_0
-read_bit_ret_1
-	MOV r0, #0x1
-	B read_bit_end
-read_bit_ret_0
-	MOV r0, #0x0
-read_bit_end
-	MOV r4, r3
-	LDMFD sp!, {lr, r3}
-	BX lr
 
 change_display				;Displays hex value passed in r0
 	STMFD SP!,{lr, r1, r2, r3}
@@ -304,13 +359,9 @@ change_display				;Displays hex value passed in r0
 clear_display
 	STMFD SP!,{lr, r1, r2, r3}
 	
-	LDR r1, =0xE002800C
-	LDR r2, =0xB784
-	STR r2, [r1]
-	;LDR r1, [r1]
-	;BIC r1, r1, r2
-	;LDR r2, =0xE002800C
-	;STR r1, [r2]
+	LDR r1, =0xE002800C							;Load P0xCLR to r1
+	LDR r2, =0xB784								;Load number (to r2) for bits of seven-segment display
+	STR r2, [r1]								;Store number in P0xClr at r1
 	
 	LDMFD sp!, {lr, r1, r2, r3}
 	BX lr
@@ -319,12 +370,12 @@ clear_display
 illuminate_red
 	STMFD SP!, {lr, r0, r1, r2}
 
-	LDR r0, =0xE002800C	
-	LDR r1, [r0]
-	MOV r2, #0x2
-	MOV r2, r2, LSL #16 
-	ORR r1, r1, r2
-	STR r1, [r0]	
+	LDR r0, =0xE002800C							;Load P0xCLR to r0
+	LDR r1, [r0]								;Load contents to r1
+	MOV r2, #0x2								;Copy 0x3 to r2
+	MOV r2, r2, LSL #16 						;Logical shift left r2 by 16
+	ORR r1, r1, r2								;Or r1 with r2
+	STR r1, [r0]								;Store result in r0
 
 	LDMFD SP!, {lr, r0, r1, r2}
 	BX lr
@@ -333,12 +384,12 @@ illuminate_red
 illuminate_blue
 	STMFD SP!, {lr, r0, r1, r2}
 
-	LDR r0, =0xE002800C
-	LDR r1, [r0]
-	MOV r2, #0x4
-	MOV r2, r2, LSL #16
-	ORR r1, r1, r2
-	STR r1, [r0]
+	LDR r0, =0xE002800C							;Load P0xCLR to r0
+	LDR r1, [r0]								;Load contents to r1
+	MOV r2, #0x4								;Mov 0x4 to r2
+	MOV r2, r2, LSL #16							;logical shift left r2 by 16
+	ORR r1, r1, r2								; or r1 with r2
+	STR r1, [r0]								; store result to r0
 
 	LDMFD SP!, {lr, r0, r1, r2}
 	BX lr
@@ -347,12 +398,12 @@ illuminate_blue
 illuminate_green
 	STMFD SP!, {lr, r0, r1, r2}
 
-	LDR r0, =0xE002800C
-	LDR r1, [r0]
-	MOV r2, #0x20
-	MOV r2, r2, LSL #16
-	ORR r1, r1, r2
-	STR r1, [r0]
+	LDR r0, =0xE002800C							;Load P0xCLR to r0
+	LDR r1, [r0]								;Load contents to r1
+	MOV r2, #0x20								;Move 0x20 to r2 (to manipulate respective bits)
+	MOV r2, r2, LSL #16							;logical shift left r2 by 16
+	ORR r1, r1, r2								; or r1 with r2
+	STR r1, [r0]								; store its contents to r0
 
 	LDMFD SP!, {lr, r0, r1, r2}
 	BX lr
@@ -360,37 +411,30 @@ illuminate_green
 illuminate_white
 	STMFD SP!, {lr}
 
-	LDR r0, =0xE002800C
-	LDR r1, [r0]
-	MOV r2, #0x26
-	MOV r2, r2, LSL #16
-	ORR r1, r1, r2
-	STR r1, [r0]
+	LDR r0, =0xE002800C							;Load P0xCLR to r0
+	LDR r1, [r0]								; load its contents to r1
+	MOV r2, #0x26								;Move 0x26 to r2 (to manipulate bits in P0xCLR)
+	MOV r2, r2, LSL #16							;logical shift left by 16 on r2
+	ORR r1, r1, r2								; or r1 with r2
+	STR r1, [r0]								; store contents r0
 
 	LDMFD SP!, {lr}
 	BX lr
 
 illuminate_purple
 	STMFD SP!, {lr}
-
-	LDR r0, =0xE002800C
-	LDR r1, [r0]
-	MOV r2, #0x6
-	MOV r2, r2, LSL #16
-	ORR r1, r1, r2
-	STR r1, [r0]
+	
+	BL illuminate_red
+	BL illuminate_blue
 
 	LDMFD SP!, {lr}
 	BX lr
 
 illuminate_yellow
 	STMFD SP!, {lr}
-
-	LDR r0, =0xE002800C
-	LDR r1, [r0]
-	LDR r2, =0x240000
-	ORR r1, r1, r2
-	STR r1, [r0]
+	
+	BL illuminate_blue
+	BL illuminate_green
 
 	LDMFD SP!, {lr}
 	BX lr
@@ -398,112 +442,66 @@ illuminate_yellow
 illuminate_reset
 	STMFD SP!, {lr, r0, r1, r2}
 
-	LDR r0, =0xE0028004
-	LDR r1, [r0]
-	MOV r2, #0x26
-	MOV r2, r2, LSL #16
-	ORR r1, r1, r2
-	STR r1, [r0]
-	
-	;BL clear_green
+	LDR r0, =0xE0028004							; load P0xSET -> r0
+	LDR r1, [r0]								; load its contents
+	MOV r2, #0x26								; 0x26 (respective bits to maniupulate in the P0xSET) -> r2
+	MOV r2, r2, LSL #16							; shift left 16 places
+	ORR r1, r1, r2								; or r1 with r2
+	STR r1, [r0]								; store results to r0
 
-	LDMFD SP!, {lr, r0, r1, r2}
-	BX lr
-		
-clear_green
-	STMFD SP!, {lr, r0, r1, r2}
-	
-	LDR r0, =0xE0028004
-	LDR r1, [r0]
-	MOV r2, #0x1
-	MOV r2, r2, LSL #21
-	ORR r1, r1, r2
-	STR r1, [r0]
-		
 	LDMFD SP!, {lr, r0, r1, r2}
 	BX lr
 
 
 output_to_decimal
-	STMFD SP!, {lr, r0, r1, r2}
-	MOV r2, r0
-	MOV r0, #0
-;otd_loop_1000
-	;MOV r1, #1000
-	;CMP r2, r1
-	;BLT otd_loop_1000_skip
-
-	;SUB r2, r2, r1
-	;ADD r0, r0, #1
-	
-	;CMP r2, r1
-	;BGT otd_loop_1000
-
-;otd_loop_1000_skip
-	;ADD r0, r0, #0x30
-	;BL output_character
-	;MOV r0, #0
-
-;otd_loop_100
-	;MOV r1, #100
-	;CMP r2, r1
-	;BLT otd_loop_100_skip
-
-	;SUB r2, r2, r1
-	;ADD r0, r0, #1
-	
-	;CMP r2, r1
-	;BGT otd_loop_100
-
-;otd_loop_100_skip
-	;ADD r0, r0, #0x30
-	;BL output_character
-	;MOV r0, #0
+	STMFD SP!, {lr, r0, r1, r2}	
+	MOV r2, r0									; r0 -> r2
+	MOV r0, #0									; 0 -> r0
 
 otd_loop_10
-	MOV r1, #10
+	MOV r1, #10									; 10 dec. -> r1
 	CMP r2, r1
-	BLT otd_loop_10_skip
+	BLT otd_loop_10_skip						; branch otd_loop_10_skip if r2 < r1
 
-	SUB r2, r2, r1
-	ADD r0, r0, #1
+	SUB r2, r2, r1								; subtract r1 from r2, store r2
+	ADD r0, r0, #1								; increment r0
 	
 	CMP r2, r1
-	BGE otd_loop_10
+	BGE otd_loop_10								;branch otd_loop_10 if r2 > r1
 
 otd_loop_10_skip
-	ADD r0, r0, #0x30
-	BL output_character
-	MOV r0, #0
+	ADD r0, r0, #0x30							; add 0x30 to r0
+	BL output_character							; output that character
+	MOV r0, #0									; 
 
 otd_loop_1
-	MOV r1, #1
-	CMP r2, r1
+	MOV r1, #1									; 1 -> r1
+	CMP r2, r1									; compare r2 and r1, branch otd_loop_1_skip if less than
 	BLT otd_loop_1_skip
 
-	SUB r2, r2, r1
-	ADD r0, r0, #1
-	
+	SUB r2, r2, r1								; subtract r1 from r2 store r2
+	ADD r0, r0, #1								; increment r0
+		
 	CMP r2, r1
-	BGE otd_loop_1
+	BGE otd_loop_1								; branch otd_loop_1 if r2 > r1
 
 otd_loop_1_skip
-	ADD r0, r0, #0x30
-	BL output_character
-	MOV r0, #0
+	ADD r0, r0, #0x30							; Add 0x30 to r0
+	BL output_character							
+	MOV r0, #0									;  0 -> r0
 
 	LDMFD SP!, {lr, r0, r1, r2}
 	BX lr
 
 pin_connect_block_setup_for_uart0
-	STMFD sp!, {r0, r1, lr}
-	LDR r0, =0xE002C000  ; PINSEL0
-	LDR r1, [r0]
-	ORR r1, r1, #5
-	BIC r1, r1, #0xA
-	STR r1, [r0]
-	LDMFD sp!, {r0, r1, lr}
-	BX lr
+	STMFD sp!, {r0, r1, lr}						;Push stack
+	LDR r0, =0xE002C000  ; PINSEL0				;Load pinsel0 r0
+	LDR r1, [r0]								;Load pinsel0 contents to r1
+	ORR r1, r1, #5								; Or with 5 dec.
+	BIC r1, r1, #0xA							; Clear against 0xA
+	STR r1, [r0]								; Store results to r0 in memory
+	LDMFD sp!, {r0, r1, lr}						;Pop stack
+	BX lr										;Branch back
 
 
 
