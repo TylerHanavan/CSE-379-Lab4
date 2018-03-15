@@ -18,6 +18,7 @@
 		EXTERN illuminate_white
 		EXTERN illuminate_purple
 		EXTERN illuminate_reset
+		EXTERN digits_SET
 PIODATA EQU 0x8 ; Offset to parallel I/O data regis
 prompt = "Welcome to lab #4  ",0
 color = "Press 'c' to change a color",0
@@ -28,25 +29,7 @@ pick_color = "Pick a color: [w : white, b : blue, g : green, r : red, p : purple
 menu = "Press 'm' to return to the main menu at any time",0
 display = "Enter a hexadecimal character to display (capitalized)",0      
       ALIGN 
-digits_SET   
-        DCD 0x00003780  ; 0 
-        DCD 0x00000300  ; 1  
-	DCD 0x00009580	; 2
-	DCD 0x00008780	; 3
-	DCD 0x0000A300	; 4
-	DCD 0x0000A680 	; 5
-	DCD 0x0000B680	; 6
-	DCD 0x00000738	; 7
-	DCD 0x0000B780	; 8
-	DCD 0x0000A730 	; 9
-	DCD 0x0000B380	; A
-	DCD 0x0000B600	; B
-	DCD 0x0000B400	; C
-	DCD 0x00009700	; D
-	DCD 0x0000B480	; E
-                            ; Place other display values here 
-        DCD 0x0000B080  ; F 
-      ALIGN 
+
 lab4 
       STMFD SP!,{lr}    ; Store register lr on stack 
 	  
@@ -54,12 +37,7 @@ lab4
 
 	MOV r1, #0
 	MOV r2, #0
-	  
-	  BL read_character
-	  
-	  CMP r0, #0x71
-	  BEQ stop
-	  
+	  	  
 	  BL setup_pins
 	  BL illuminate_reset
 

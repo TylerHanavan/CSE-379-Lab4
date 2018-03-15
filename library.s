@@ -17,10 +17,31 @@
 	EXPORT illuminate_white
 	EXPORT illuminate_purple
 	EXPORT illuminate_reset
+	EXPORT digits_SET
 input = "                ",0		;input string with 16 max characters
 
 	ALIGN
-
+		
+digits_SET   
+    DCD 0x00003780  ; 0 
+    DCD 0x00000300  ; 1  
+	DCD 0x00009580	; 2
+	DCD 0x00008780	; 3
+	DCD 0x0000A300	; 4
+	DCD 0x0000A680 	; 5
+	DCD 0x0000B680	; 6
+	DCD 0x00000738	; 7
+	DCD 0x0000B780	; 8
+	DCD 0x0000A730 	; 9
+	DCD 0x0000B380	; A
+	DCD 0x0000B600	; B
+	DCD 0x0000B400	; C
+	DCD 0x00009700	; D
+	DCD 0x0000B480	; E
+                            ; Place other display values here 
+    DCD 0x0000B080  ; F 
+      ALIGN 
+		  
 uart_init
 	STMFD SP!,{lr}			;push link register to stack
 	LDR r0, =0xE000C00C		;loads the memory address 0xE000C00C into r0
@@ -79,7 +100,7 @@ read_character_2
 	AND r5, r4, r5			;logically AND r4 and r5 to compare the LSB(RDR) of r4
 	
 	CMP r5, #1			;if the value of r5 is one, we are ready to receive data
-	BNE read_character_break		;else redo the process
+	BNE read_character_2		;else redo the process
 	
 	; Receiving
 	
@@ -180,7 +201,8 @@ setup_pins
 
 	LDR r1, =0xE0028008			;IODIR for RGBLED
 	LDR r2, [r1]
-	MOV r3, #13 LSL 21
+	MOV r3, #13
+	MOV r3, r3, LSL #21
 	STR r3, [r1]
 
 	LDMFD sp!, {r3}
@@ -318,7 +340,10 @@ change_display				;Displays hex value passed in r0
 	LDMFD sp!, {r1}
 	LDMFD sp!, {lr}
 	BX lr
-
+	
+clear_display
+	
+	
 illuminate_red
 	STMFD SP!, {lr}
 	STMFD SP!, {r0}
@@ -329,8 +354,9 @@ illuminate_red
 
 	LDR r0, =0xE002801C	
 	LDR r1, [r0]
-	MOV r2, #0x1 LSL #17 
-	OR r1, r1, r2
+	MOV r2, #0x1
+	MOV r2, r2, LSL #17 
+	ORR r1, r1, r2
 	STR r1, [r0]	
 
 	LDMFD SP!, {r2}
@@ -350,8 +376,9 @@ illuminate_blue
 
         LDR r0, =0xE002801C
         LDR r1, [r0]
-        MOV r2, #0x1 LSL #18
-        OR r1, r1, r2
+		MOV r2, #0x1
+        MOV r2, r2, LSL #18
+        ORR r1, r1, r2
         STR r1, [r0]
 
         LDMFD SP!, {r2}
@@ -371,8 +398,9 @@ illuminate_green
 
         LDR r0, =0xE002801C
         LDR r1, [r0]
-        MOV r2, #0x1 LSL #21
-        OR r1, r1, r2
+		MOV r2, #0x1
+        MOV r2, r2, LSL #21
+        ORR r1, r1, r2
         STR r1, [r0]
 
         LDMFD SP!, {r2}
@@ -417,8 +445,9 @@ illuminate_reset
 
         LDR r0, =0xE0028018
         LDR r1, [r0]
-        MOV r2, #0x13 LSL #21
-        OR r1, r1, r2
+		MOV r2, #0x13
+        MOV r2, r2, LSL #21
+        ORR r1, r1, r2
         STR r1, [r0]
 
         LDMFD SP!, {r2}
