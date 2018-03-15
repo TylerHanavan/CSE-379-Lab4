@@ -19,6 +19,8 @@
 		EXTERN illuminate_purple
 		EXTERN illuminate_reset
 		EXTERN digits_SET
+		EXTERN pin_connect_block_setup_for_uart0
+		EXTERN new_line
 PIODATA EQU 0x8 ; Offset to parallel I/O data regis
 prompt = "Welcome to lab #4  ",0
 color = "Press 'c' to change a color",0
@@ -28,24 +30,48 @@ quit = "Press 'q' at anytime to quit",0
 pick_color = "Pick a color: [w : white, b : blue, g : green, r : red, p : purple, y : yellow]",0
 menu = "Press 'm' to return to the main menu at any time",0
 display = "Enter a hexadecimal character to display (capitalized)",0      
-      ALIGN 
+goodbye = "Exiting program, goodbyte!",0
+returning_menu = "Returning to main menu.",0
+white = "White selected",0
+red = "Red selected",0
+green = "Green selected",0
+blue = "Blue selected",0
+yellow = "Yellow selected",0
+purple = "Purple selected",0
+	  ALIGN 
 
 lab4 
-      STMFD SP!,{lr}    ; Store register lr on stack 
-	  
-	  BL uart_init
+	STMFD SP!,{lr}    ; Store register lr on stack 
+	
+	BL pin_connect_block_setup_for_uart0
+	BL uart_init
 
 	MOV r1, #0
 	MOV r2, #0
 	  	  
-	  BL setup_pins
-	  BL illuminate_reset
+	BL setup_pins
+	BL illuminate_reset
+	  
+	;BL read_character
+	
+	;BL output_character	
+	
+	LDR r4, =color
+	BL output_string
 
 loop	
 	
 	BL read_character
+	BL output_character
+	BL new_line
 	CMP r0, #0x63
 	BLEQ init_color
+	LDR r4, =returning_menu
+	BL output_string
+	CMP r0, #0x73
+	BLEQ init_seven_segment
+	LDR r4, =returning_menu
+	BL output_string
 
 	CMP r0, #0x71
 	BEQ stop
@@ -53,6 +79,9 @@ loop
 
 init_seven_segment
 	STMFD SP!, {lr}
+	
+	LDR r4, =display
+	BL output_string
 
 loop_seven_segment
 
@@ -64,11 +93,20 @@ loop_seven_segment
 	BEQ stop
 
 	BL output_character	
-	SUB r0, r0, #0x30
-	CMP r0, #0x0
+	CMP r0, #0x30
 	BLT loop_seven_segment
-	CMP r0, #0xF
+	CMP r0, #0x46
 	BGT loop_seven_segment
+	CMP r0, #0x3A
+	BLT lss_num
+lss_let
+	SUB r0, r0, #0x41
+	ADD r0, r0, #10
+	B lss_skip
+lss_num
+	SUB r0, r0, #0x30
+lss_skip
+	
 	BL change_display
 
 	B loop_seven_segment
@@ -81,8 +119,8 @@ end_seven_segment
 init_color
 	STMFD SP!,{lr}
 
-	LDR r4, =color
-	BL read_string
+	LDR r4, =pick_color
+	BL output_string
 
 	MOV r1, #1
 loop_color
@@ -106,26 +144,44 @@ loop_color
 
 
 color_red
+	LDR r4, =red
+	BL output_string
+	BL illuminate_reset
 	BL illuminate_red
 	B color_end
 
 color_green
+	LDR r4, =blue
+	BL output_string
+	BL illuminate_reset
 	BL illuminate_green
 	B color_end
 
 color_blue
+	LDR r4, =red
+	BL output_string
+	BL illuminate_reset
 	BL illuminate_blue
 	B color_end
 
 color_white
+	LDR r4, =white
+	BL output_string
+	BL illuminate_reset
 	BL illuminate_white
 	B color_end
 
 color_purple
+	LDR r4, =purple
+	BL output_string
+	BL illuminate_reset
 	BL illuminate_purple
 	B color_end
 
 color_yellow
+	LDR r4, =yellow
+	BL output_string
+	BL illuminate_reset
 	BL illuminate_yellow
 	B color_end
 
@@ -135,6 +191,9 @@ color_end
 	BX lr
 
 stop
+	LDR r4, =goodbye
+	BL output_string
+	
 	  
       LDMFD SP!, {lr}   ; Restore register lr from stack     
       BX LR 

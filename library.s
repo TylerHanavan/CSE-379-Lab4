@@ -18,6 +18,8 @@
 	EXPORT illuminate_purple
 	EXPORT illuminate_reset
 	EXPORT digits_SET
+	EXPORT new_line
+	EXPORT pin_connect_block_setup_for_uart0
 input = "                ",0		;input string with 16 max characters
 
 	ALIGN
@@ -60,9 +62,7 @@ uart_init
 	BX lr				;move pc,lr
 
 read_string	
-	STMFD SP!,{lr}			;push link register to stack
-	STMFD SP!,{r1}			;push r1 to stack
-	STMFD SP!,{r2}			;push r2 to stack
+	STMFD SP!,{lr, r1, r2}			;push link register to stack
 	
 	LDR r1, =input			;load address of =input to r1
 read_string_2
@@ -80,17 +80,12 @@ read_string_2
 terminate_string
 	MOV r2, #0x0
 	STRB r2, [r1]			;null-terminate the string stored in [r1]
-	LDMFD sp!, {r2}			;pop r2 from stack
-	LDMFD sp!, {r1}			;pop r1 from stack
-	LDMFD sp!, {lr}			;pop link register from stack
+	LDMFD sp!, {lr, r1, r2}			;pop link register from stack
 	BX lr				;move pc,lr
 
 
 read_character 				;Begin Receive Character block
-	STMFD SP!,{lr}
-	STMFD SP!,{r3}
-	STMFD SP!,{r4}
-	STMFD SP!,{r5}
+	STMFD SP!,{lr, r3, r4, r5}
 read_character_2
 	LDR r3, =0xE000C014		;loads the address of uart0 into register r3 
 	
@@ -107,17 +102,11 @@ read_character_2
 	LDR r3, =0xE000C000		;loads the address of the receive buffer register into r5
 	LDR r0, [r3]			;hex value at r3 is loaded into r8
 read_character_break
-	LDMFD sp!, {r5}
-	LDMFD sp!, {r4}
-	LDMFD sp!, {r3}	
-	LDMFD sp!, {lr}
+	LDMFD sp!, {lr, r3, r4, r5}
 	BX lr
 
 output_character 				;Begin Transmit Character block
-	STMFD SP!,{lr}
-	STMFD SP!,{r3}
-	STMFD SP!,{r6}
-	STMFD SP!,{r5}
+	STMFD SP!,{lr, r3, r6, r5}
 output_character_2
 	LDR r3, =0xE000C014			;loads address of uart0 into register r3
 	
@@ -134,17 +123,12 @@ output_character_2
 	LDR r5, =0xE000C000			;loads the address of the transmit holding register (same as receive buffer)
 	
 	STR r0, [r5]				;stores the value of r0 into the address at r5
-	LDMFD sp!, {r5}
-	LDMFD sp!, {r6}
-	LDMFD sp!, {r3}
-	LDMFD sp!, {lr}
+	LDMFD sp!, {lr, r3, r6, r5}
 	BX lr
 	
 	
 output_string
-	STMFD SP!,{lr}
-	STMFD SP!,{r0}
-	STMFD SP!,{r1}
+	STMFD SP!,{lr, r0, r1}
 	
 output_string_2
 	LDRB r0, [r4], #1      		;Load =prompt contents from memory (r4) to r0, one byte at a time. Then increments memory address, r4, by 1.
@@ -154,25 +138,21 @@ output_string_2
 	BNE output_string_2			;if equal we continue on with program
 	
 	BL new_line
-	B read_string				;branches to read string
-	LDMFD sp!, {r1}
-	LDMFD sp!, {r0}
-	LDMFD sp!, {lr}
+	
+	LDMFD sp!, {lr, r0, r1}
 	BX lr
 	
 new_line
-	STMFD SP!,{lr}
-	STMFD SP!,{r10}
+	STMFD SP!,{lr, r10}
 	MOV r10, r0					;saves contents of r0 into r10 before using it
 	MOV r0, #0xA				;new line character copied into r0
 	BL output_character			;branch and link to output character
 	MOV r0, #0xD				;carriage return copied into r0
 	BL output_character			;branch and link to output character
 	MOV r0, r10					;takes saved content from r10 and copies into r0
-	CMP r8, #0xD				;checks if r8 has  carriage return and jumps to clear it
-	BEQ clear_read_character
-	LDMFD sp!, {r10}
-	LDMFD sp!, {lr}
+	;CMP r8, #0xD				;checks if r8 has  carriage return and jumps to clear it
+	;BEQ clear_read_character
+	LDMFD sp!, {lr, r10}
 	BX lr	 
 	
 clear_read_character
@@ -182,10 +162,7 @@ clear_read_character
 	BX lr
 
 setup_pins
-	STMFD SP!,{lr}
-	STMFD SP!,{r1}
-	STMFD SP!,{r2}	
-	STMFD SP!,{r3}
+	STMFD SP!,{lr, r1, r2, r3}
 
 	LDR r1, =0xE002C004			;PINSEl1
 	LDR r2, [r1]
@@ -199,21 +176,22 @@ setup_pins
 	BIC r2, r2, r3
 	STR r2, [r1]
 
-	LDR r1, =0xE0028008			;IODIR for RGBLED
+	LDR r1, =0xE0028008			;IODIR for Seven-Seg
 	LDR r2, [r1]
-	MOV r3, #13
-	MOV r3, r3, LSL #21
+	LDR r3, =0xB784
 	STR r3, [r1]
 
-	LDMFD sp!, {r3}
-	LDMFD sp!, {r2}
-	LDMFD sp!, {r1}
-	LDMFD sp!, {lr}
+	LDR r1, =0xE0028008			;IODIR for RGBLED
+	LDR r2, [r1]
+	MOV r3, #0x26
+	MOV r3, r3, LSL #16
+	STR r3, [r1]				;somehow illuminates led rgb
+
+	LDMFD sp!, {lr, r1, r2, r3}
 	BX lr 
 
 read_from_push_btns
-	STMFD SP!,{lr}
-	STMFD SP!,{r1}
+	STMFD SP!,{lr, r1}
 	
 	LDR r1, =0xE0028010		;IO1PIN
 	LDR r1, [r1]
@@ -229,15 +207,11 @@ read_from_push_btns
 	;ADD r0, r0, #1
 	;AND r0, r0, 0xF
 
-	LDMFD sp!,{r1}
-	LDMFD sp!,{lr}
+	LDMFD sp!,{lr, r1}
 	BX lr
 
 read_num_from_btns
-	STMFD SP!,{lr}
-	STMFD SP!,{r1}
-	STMFD SP!,{r2}
-	STMFD SP!,{r3}
+	STMFD SP!,{lr, r1, r2, r3}
 	
 	MOV r3, #0
 	
@@ -278,16 +252,11 @@ rnf_add_1_skip
 
 	MOV r0, r3
 
-	LDMFD sp!,{r3}
-	LDMFD sp!,{r2}
-	LDMFD sp!,{r1}
-	LDMFD sp!,{lr}
+	LDMFD sp!,{lr, r1, r2, r3}
 	BX lr
 
 led_set					;set LED at bit r4 to value at bit r5
-	STMFD SP!,{lr}
-	STMFD SP!,{r2}
-	STMFD SP!,{r3}
+	STMFD SP!,{lr, r2, r3}
 	
 	CMP r5, #0
 	BEQ low
@@ -300,14 +269,11 @@ low
 	LDR r3, =0xE002800C
 	;MOV r2, #1 LSL r4
 	STR r2, [r3]
-	LDMFD sp!, {r3}
-	LDMFD sp!, {r2}
-	LDMFD sp!, {lr}
+	LDMFD sp!, {lr, r2, r3}
 	BX lr
 
 read_bit				;reads and checks if bit locations specified in r5 are set to '1' in r4
-	STMFD SP!,{lr}
-	STMFD SP!,{r3}
+	STMFD SP!,{lr, r3}
 	MOV r3, r4
 	AND r4, r4, r5
 	CMP r4, #0x0
@@ -319,102 +285,74 @@ read_bit_ret_0
 	MOV r0, #0x0
 read_bit_end
 	MOV r4, r3
-	LDMFD sp!, {r3}
-	LDMFD sp!, {lr}
+	LDMFD sp!, {lr, r3}
 	BX lr
 
 change_display				;Displays hex value passed in r0
-	STMFD SP!,{lr}
-	STMFD SP!,{r1}
-	STMFD SP!,{r3}
-	STMFD SP!,{r2}
+	STMFD SP!,{lr, r1, r2, r3}
 
 	LDR r1, =0xE0028000 		; Base address 
 	LDR r3, =digits_SET 
-	MOV r0, r0, LSL #2 		; Each stored value is 32 bits 
+	;MOV r0, r0, LSL #2 		; Each stored value is 32 bits 
 	LDR r2, [r3, r0]   		; Load IOSET pattern for digit in r0 
 	STR r2, [r1, #4]   		; Display (0x4 = offset to IOSET) 
 
-	LDMFD sp!, {r2}
-	LDMFD sp!, {r3}
-	LDMFD sp!, {r1}
-	LDMFD sp!, {lr}
+	LDMFD sp!, {lr, r1, r2, r3}
 	BX lr
 	
 clear_display
 	
 	
 illuminate_red
-	STMFD SP!, {lr}
-	STMFD SP!, {r0}
-	STMFD SP!, {r1}
-	STMFD SP!, {r2}
+	STMFD SP!, {lr, r0, r1, r2}
 
-	BL illuminate_reset
-
-	LDR r0, =0xE002801C	
+	LDR r0, =0xE002800C	
 	LDR r1, [r0]
-	MOV r2, #0x1
-	MOV r2, r2, LSL #17 
+	MOV r2, #0x2
+	MOV r2, r2, LSL #16 
 	ORR r1, r1, r2
 	STR r1, [r0]	
 
-	LDMFD SP!, {r2}
-	LDMFD SP!, {r1}
-	LDMFD SP!, {r0}
-	LDMFD SP!, {lr}
+	LDMFD SP!, {lr, r0, r1, r2}
 	BX lr
 
 
 illuminate_blue
-        STMFD SP!, {lr}
-        STMFD SP!, {r0}
-        STMFD SP!, {r1}
-        STMFD SP!, {r2}
+	STMFD SP!, {lr, r0, r1, r2}
 
-	BL illuminate_reset
+	LDR r0, =0xE002800C
+	LDR r1, [r0]
+	MOV r2, #0x4
+	MOV r2, r2, LSL #16
+	ORR r1, r1, r2
+	STR r1, [r0]
 
-        LDR r0, =0xE002801C
-        LDR r1, [r0]
-		MOV r2, #0x1
-        MOV r2, r2, LSL #18
-        ORR r1, r1, r2
-        STR r1, [r0]
-
-        LDMFD SP!, {r2}
-        LDMFD SP!, {r1}
-        LDMFD SP!, {r0}
-        LDMFD SP!, {lr}
-        BX lr
+	LDMFD SP!, {lr, r0, r1, r2}
+	BX lr
 
 
 illuminate_green
-        STMFD SP!, {lr}
-        STMFD SP!, {r0}
-        STMFD SP!, {r1}
-        STMFD SP!, {r2}
+	STMFD SP!, {lr, r0, r1, r2}
 
-	BL illuminate_reset
+	LDR r0, =0xE002800C
+	LDR r1, [r0]
+	MOV r2, #0x20
+	MOV r2, r2, LSL #16
+	ORR r1, r1, r2
+	STR r1, [r0]
 
-        LDR r0, =0xE002801C
-        LDR r1, [r0]
-		MOV r2, #0x1
-        MOV r2, r2, LSL #21
-        ORR r1, r1, r2
-        STR r1, [r0]
-
-        LDMFD SP!, {r2}
-        LDMFD SP!, {r1}
-        LDMFD SP!, {r0}
-        LDMFD SP!, {lr}
-        BX lr
+	LDMFD SP!, {lr, r0, r1, r2}
+	BX lr
 
 illuminate_white
 	STMFD SP!, {lr}
 
-	BL illuminate_green
-	BL illuminate_blue
-	BL illuminate_red
+	LDR r0, =0xE002800C
+	LDR r1, [r0]
+	MOV r2, #0x26
+	MOV r2, r2, LSL #16
+	ORR r1, r1, r2
+	STR r1, [r0]
 
 	LDMFD SP!, {lr}
 	BX lr
@@ -422,46 +360,60 @@ illuminate_white
 illuminate_purple
 	STMFD SP!, {lr}
 
-	BL illuminate_red
-	BL illuminate_blue
+	LDR r0, =0xE002800C
+	LDR r1, [r0]
+	MOV r2, #0x6
+	MOV r2, r2, LSL #16
+	ORR r1, r1, r2
+	STR r1, [r0]
 
 	LDMFD SP!, {lr}
 	BX lr
 
 illuminate_yellow
-        STMFD SP!, {lr}
+	STMFD SP!, {lr}
 
-        BL illuminate_green
-        BL illuminate_blue
+	LDR r0, =0xE002800C
+	LDR r1, [r0]
+	MOV r2, #0x24
+	MOV r2, r2, LSL #16
+	ORR r1, r1, r2
+	STR r1, [r0]
 
-        LDMFD SP!, {lr}
-        BX lr
+	LDMFD SP!, {lr}
+	BX lr
 
 illuminate_reset
-        STMFD SP!, {lr}
-        STMFD SP!, {r0}
-        STMFD SP!, {r1}
-        STMFD SP!, {r2}
+	STMFD SP!, {lr, r0, r1, r2}
 
-        LDR r0, =0xE0028018
-        LDR r1, [r0]
-		MOV r2, #0x13
-        MOV r2, r2, LSL #21
-        ORR r1, r1, r2
-        STR r1, [r0]
+	LDR r0, =0xE0028004
+	LDR r1, [r0]
+	MOV r2, #0x26
+	MOV r2, r2, LSL #16
+	ORR r1, r1, r2
+	STR r1, [r0]
+	
+	;BL clear_green
 
-        LDMFD SP!, {r2}
-        LDMFD SP!, {r1}
-        LDMFD SP!, {r0}
-        LDMFD SP!, {lr}
-        BX lr
+	LDMFD SP!, {lr, r0, r1, r2}
+	BX lr
+		
+clear_green
+	STMFD SP!, {lr, r0, r1, r2}
+	
+	LDR r0, =0xE0028004
+	LDR r1, [r0]
+	MOV r2, #0x1
+	MOV r2, r2, LSL #21
+	ORR r1, r1, r2
+	STR r1, [r0]
+		
+	LDMFD SP!, {lr, r0, r1, r2}
+	BX lr
 
 
 output_to_decimal
-	STMFD SP!, {lr}
-	STMFD SP!, {r0}
-	STMFD SP!, {r1}
-	STMFD SP!, {r2}
+	STMFD SP!, {lr, r0, r1, r2}
 	MOV r2, r0
 	MOV r0, #0
 otd_loop_1000
@@ -512,13 +464,18 @@ otd_loop_1_skip
         BL output_character
         MOV r0, #0
 
-	LDMFD SP!, {r2}
-	LDMFD SP!, {r1}
-	LDMFD SP!, {r0}
-	LDMFD SP!, {lr}
+	LDMFD SP!, {lr, r0, r1, r2}
 	BX lr
 
-
+pin_connect_block_setup_for_uart0
+	STMFD sp!, {r0, r1, lr}
+	LDR r0, =0xE002C000  ; PINSEL0
+	LDR r1, [r0]
+	ORR r1, r1, #5
+	BIC r1, r1, #0xA
+	STR r1, [r0]
+	LDMFD sp!, {r0, r1, lr}
+	BX lr
 
 
 
