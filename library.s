@@ -19,6 +19,7 @@
 	EXPORT illuminate_reset
 	EXPORT digits_SET
 	EXPORT new_line
+	EXPORT output_to_decimal	
 	EXPORT pin_connect_block_setup_for_uart0
 input = "                ",0		;input string with 16 max characters
 
@@ -26,18 +27,18 @@ input = "                ",0		;input string with 16 max characters
 		
 digits_SET   
     DCD 0x00003780  ; 0 
-    DCD 0x00000300  ; 1  
+    DCD 0x00003000  ; 1  
 	DCD 0x00009580	; 2
 	DCD 0x00008780	; 3
 	DCD 0x0000A300	; 4
 	DCD 0x0000A680 	; 5
 	DCD 0x0000B680	; 6
-	DCD 0x00000738	; 7
+	DCD 0x00000380	; 7
 	DCD 0x0000B780	; 8
-	DCD 0x0000A730 	; 9
+	DCD 0x0000A380 	; 9
 	DCD 0x0000B380	; A
 	DCD 0x0000B600	; B
-	DCD 0x0000B400	; C
+	DCD 0x00003480	; C
 	DCD 0x00009700	; D
 	DCD 0x0000B480	; E
                             ; Place other display values here 
@@ -178,15 +179,15 @@ setup_pins
 
 	LDR r1, =0xE0028008			;IODIR for Seven-Seg
 	LDR r2, [r1]
-	LDR r3, =0xB784
+	LDR r3, =0x26B784
 	STR r3, [r1]
 
-	LDR r1, =0xE0028008			;IODIR for RGBLED
-	LDR r2, [r1]
-	MOV r3, #0x26
-	MOV r3, r3, LSL #16
-	STR r3, [r1]				;somehow illuminates led rgb
-
+	;LDR r1, =0xE0028008			;IODIR for RGBLED
+	;LDR r2, [r1]
+	;MOV r3, #0x26
+	;MOV r3, r3, LSL #16
+	;STR r3, [r1]				;somehow illuminates led rgb
+;
 	LDMFD sp!, {lr, r1, r2, r3}
 	BX lr 
 
@@ -293,7 +294,7 @@ change_display				;Displays hex value passed in r0
 
 	LDR r1, =0xE0028000 		; Base address 
 	LDR r3, =digits_SET 
-	;MOV r0, r0, LSL #2 		; Each stored value is 32 bits 
+	MOV r0, r0, LSL #2 		; Each stored value is 32 bits 
 	LDR r2, [r3, r0]   		; Load IOSET pattern for digit in r0 
 	STR r2, [r1, #4]   		; Display (0x4 = offset to IOSET) 
 
@@ -301,6 +302,18 @@ change_display				;Displays hex value passed in r0
 	BX lr
 	
 clear_display
+	STMFD SP!,{lr, r1, r2, r3}
+	
+	LDR r1, =0xE002800C
+	LDR r2, =0xB784
+	STR r2, [r1]
+	;LDR r1, [r1]
+	;BIC r1, r1, r2
+	;LDR r2, =0xE002800C
+	;STR r1, [r2]
+	
+	LDMFD sp!, {lr, r1, r2, r3}
+	BX lr
 	
 	
 illuminate_red
@@ -375,8 +388,7 @@ illuminate_yellow
 
 	LDR r0, =0xE002800C
 	LDR r1, [r0]
-	MOV r2, #0x24
-	MOV r2, r2, LSL #16
+	LDR r2, =0x240000
 	ORR r1, r1, r2
 	STR r1, [r0]
 
@@ -416,53 +428,69 @@ output_to_decimal
 	STMFD SP!, {lr, r0, r1, r2}
 	MOV r2, r0
 	MOV r0, #0
-otd_loop_1000
-	MOV r1, #1000
+;otd_loop_1000
+	;MOV r1, #1000
+	;CMP r2, r1
+	;BLT otd_loop_1000_skip
+
+	;SUB r2, r2, r1
+	;ADD r0, r0, #1
+	
+	;CMP r2, r1
+	;BGT otd_loop_1000
+
+;otd_loop_1000_skip
+	;ADD r0, r0, #0x30
+	;BL output_character
+	;MOV r0, #0
+
+;otd_loop_100
+	;MOV r1, #100
+	;CMP r2, r1
+	;BLT otd_loop_100_skip
+
+	;SUB r2, r2, r1
+	;ADD r0, r0, #1
+	
+	;CMP r2, r1
+	;BGT otd_loop_100
+
+;otd_loop_100_skip
+	;ADD r0, r0, #0x30
+	;BL output_character
+	;MOV r0, #0
+
+otd_loop_10
+	MOV r1, #10
 	CMP r2, r1
-	BGT otd_loop_1000_skip
+	BLT otd_loop_10_skip
 
 	SUB r2, r2, r1
 	ADD r0, r0, #1
+	
+	CMP r2, r1
+	BGE otd_loop_10
 
-otd_loop_1000_skip
+otd_loop_10_skip
+	ADD r0, r0, #0x30
 	BL output_character
 	MOV r0, #0
 
-otd_loop_100
-        MOV r1, #100
-        CMP r2, r1
-        BGT otd_loop_100_skip
-
-        SUB r2, r2, r1
-        ADD r0, r0, #1
-
-otd_loop_100_skip
-        BL output_character
-        MOV r0, #0
-
-otd_loop_10
-        MOV r1, #10
-        CMP r2, r1
-        BGT otd_loop_10_skip
-
-        SUB r2, r2, r1
-        ADD r0, r0, #1
-
-otd_loop_10_skip
-        BL output_character
-        MOV r0, #0
-
 otd_loop_1
-        MOV r1, #1
-        CMP r2, r1
-        BGT otd_loop_1_skip
+	MOV r1, #1
+	CMP r2, r1
+	BLT otd_loop_1_skip
 
-        SUB r2, r2, r1
-        ADD r0, r0, #1
+	SUB r2, r2, r1
+	ADD r0, r0, #1
+	
+	CMP r2, r1
+	BGE otd_loop_1
 
 otd_loop_1_skip
-        BL output_character
-        MOV r0, #0
+	ADD r0, r0, #0x30
+	BL output_character
+	MOV r0, #0
 
 	LDMFD SP!, {lr, r0, r1, r2}
 	BX lr

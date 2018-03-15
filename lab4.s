@@ -18,6 +18,7 @@
 		EXTERN illuminate_white
 		EXTERN illuminate_purple
 		EXTERN illuminate_reset
+		EXTERN output_to_decimal
 		EXTERN digits_SET
 		EXTERN pin_connect_block_setup_for_uart0
 		EXTERN new_line
@@ -51,12 +52,18 @@ lab4
 	  	  
 	BL setup_pins
 	BL illuminate_reset
+
+	BL clear_display
 	  
 	;BL read_character
 	
 	;BL output_character	
-	
+help
 	LDR r4, =color
+	BL output_string
+	LDR r4, =segment
+	BL output_string
+	LDR r4, =leds
 	BL output_string
 
 loop	
@@ -66,12 +73,10 @@ loop
 	BL new_line
 	CMP r0, #0x63
 	BLEQ init_color
-	LDR r4, =returning_menu
-	BL output_string
 	CMP r0, #0x73
 	BLEQ init_seven_segment
-	LDR r4, =returning_menu
-	BL output_string
+	CMP r0, #0x6C
+	BLEQ init_led
 
 	CMP r0, #0x71
 	BEQ stop
@@ -106,12 +111,24 @@ lss_let
 lss_num
 	SUB r0, r0, #0x30
 lss_skip
+
+	BL clear_display
 	
 	BL change_display
 
-	B loop_seven_segment
-
 end_seven_segment
+	LDR r4, =returning_menu
+	BL output_string
+
+	LDMFD SP!, {lr}
+	BX lr
+	
+init_led	
+	STMFD SP!,{lr}
+	
+	BL read_num_from_btns
+	BL output_to_decimal
+	BL new_line
 
 	LDMFD SP!, {lr}
 	BX lr
@@ -186,6 +203,8 @@ color_yellow
 	B color_end
 
 color_end	
+	LDR r4, =returning_menu
+	BL output_string
 
 	LDMFD SP!,{lr}
 	BX lr
