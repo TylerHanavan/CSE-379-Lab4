@@ -44,53 +44,53 @@ lab4
 	STMFD SP!,{lr}    ; Store register lr on stack 
 	
 	BL pin_connect_block_setup_for_uart0
-	BL uart_init
+	BL uart_init			;init uart and pin connect block
 
-	MOV r1, #0
-	MOV r2, #0
+	MOV r1, #0			;Copy 0 to r1
+	MOV r2, #0			;Copy 0 to r2
 	  	  
-	BL setup_pins
-	BL illuminate_reset
+	BL setup_pins			;setup pins
+	BL illuminate_reset		;clear rgbled
 	
-	BL illuminate_white
+	BL illuminate_white		;illuminate rgbled to white
 
-	BL clear_display
+	BL clear_display		;clear the 7seg display
 	  
 	;BL read_character
 	
 	;BL output_character	
 
-	BL display_menu
+	BL display_menu			;display the menu
 
 loop	
 	
-	BL read_character
+	BL read_character		;read character
 	BL output_character
 	BL new_line
-	CMP r0, #0x63
-	BLEQ init_color
+	CMP r0, #0x63			
+	BLEQ init_color			;branch init_color if c is pressed
 	CMP r0, #0x73
-	BLEQ init_seven_segment
+	BLEQ init_seven_segment		;branch init_seven_segment if s is pressed
 	CMP r0, #0x6C
-	BLEQ init_led
+	BLEQ init_led			;branch init_led if l is pressed
 
-	CMP r0, #0x71
-	BEQ stop
-	B loop
+	CMP r0, #0x71			
+	BEQ stop			;quit if q is pressed
+	B loop				;loop above
 	
 display_menu
 	STMFD SP!, {lr}
 	
 	BL new_line
 
-	LDR r4, =color
-	BL output_string
-	LDR r4, =segment
-	BL output_string
+	LDR r4, =color			
+	BL output_string		;display color prompt
+	LDR r4, =segment		
+	BL output_string		;display segment prompt
 	LDR r4, =leds
-	BL output_string
+	BL output_string		;display leds prompt
 	LDR r4, =quit
-	BL output_string
+	BL output_string		;display goodbyte quit prompt
 
 	LDMFD SP!, {lr}
 	BX lr
@@ -99,40 +99,40 @@ init_seven_segment
 	STMFD SP!, {lr}
 	
 	LDR r4, =display
-	BL output_string
+	BL output_string		;display display prompt
 
 loop_seven_segment
 
 	BL read_character
 	CMP r0, #0x6D
-	BEQ end_seven_segment
+	BEQ end_seven_segment		;quit seven segment if m is pressed
 
-	CMP r0, #0x71
+	CMP r0, #0x71			;quit if q is pressed
 	BEQ stop
 
 	BL output_character	
 	BL new_line
-	CMP r0, #0x30
-	BLT loop_seven_segment
-	CMP r0, #0x46
-	BGT loop_seven_segment
+	CMP r0, #0x30	
+	BLT loop_seven_segment		;check if number is less than ascii 0
+	CMP r0, #0x46	
+	BGT loop_seven_segment		;check if number is greater than ascii F
 	CMP r0, #0x3A
-	BLT lss_num
-lss_let
-	SUB r0, r0, #0x41
-	ADD r0, r0, #10
-	B lss_skip
+	BLT lss_num			;check if is number, branch lss_num if so
+lss_let		
+	SUB r0, r0, #0x41		;convert Ascii capital letter to decimal
+	ADD r0, r0, #10			;increment r0 by 10
+	B lss_skip			; branch skip
 lss_num
-	SUB r0, r0, #0x30
+	SUB r0, r0, #0x30		;convert ascii number to decimal number
 lss_skip
 
-	BL clear_display
+	BL clear_display		;clear display
 	
-	BL change_display
+	BL change_display		;show display changes
 
 end_seven_segment
 
-	BL display_menu
+	BL display_menu			;display menu
 
 	LDMFD SP!, {lr}
 	BX lr
@@ -152,30 +152,30 @@ init_led
 init_color
 	STMFD SP!,{lr}
 
-	LDR r4, =pick_color
-	BL output_string
+	LDR r4, =pick_color		;display pick color menu
+	BL output_string		
 
 	MOV r1, #1
 loop_color
-	BL read_character
-	CMP r0, #0x72
-	BEQ color_red
+	BL read_character		;read a character
+	CMP r0, #0x72		
+	BEQ color_red			;branch color_red if r
 	CMP r0, #0x79
-	BEQ color_yellow
+	BEQ color_yellow		;branch color_yellow if y
 	CMP r0, #0x62
-	BEQ color_blue
+	BEQ color_blue			;branch color_blue if b
 	CMP r0, #0x77
-	BEQ color_white
+	BEQ color_white			;branch color_white if w
 	CMP r0, #0x67
-	BEQ color_green
+	BEQ color_green			;branch color_green if g
 	CMP r0, #0x70
-	BEQ color_purple
+	BEQ color_purple		;branch color_purple if p
 	CMP r0, #0x64
-	BEQ color_off
+	BEQ color_off			;branch color_off if d
 	CMP r0, #0x71
-	BEQ stop
+	BEQ stop			;branch stop if q
 
-	B loop_color
+	B loop_color			;repeat loop
 
 color_off
 	BL illuminate_reset
@@ -183,41 +183,41 @@ color_off
 
 color_red
 	LDR r4, =red
-	BL output_string
+	BL output_string		;output red string
 	BL illuminate_reset
 	BL illuminate_red
 	B color_end
 
 color_green
 	LDR r4, =blue
-	BL output_string
+	BL output_string		;output blue string
 	BL illuminate_reset
 	BL illuminate_green
 	B color_end
 
 color_blue
-	LDR r4, =red
+	LDR r4, =red			;output blue string
 	BL output_string
 	BL illuminate_reset
 	BL illuminate_blue
 	B color_end
 
 color_white
-	LDR r4, =white
+	LDR r4, =white			;output white string
 	BL output_string
 	BL illuminate_reset
 	BL illuminate_white
 	B color_end
 
 color_purple
-	LDR r4, =purple
+	LDR r4, =purple			;output purple string
 	BL output_string
 	BL illuminate_reset
 	BL illuminate_purple
 	B color_end
 
 color_yellow
-	LDR r4, =yellow
+	LDR r4, =yellow			;output yellow string
 	BL output_string
 	BL illuminate_reset
 	BL illuminate_yellow
@@ -225,13 +225,13 @@ color_yellow
 
 color_end	
 
-	BL display_menu
+	BL display_menu			;display menu
 
 	LDMFD SP!,{lr}
 	BX lr
 
 stop
-	LDR r4, =goodbye
+	LDR r4, =goodbye		;output goodbye string
 	BL output_string
 	
   

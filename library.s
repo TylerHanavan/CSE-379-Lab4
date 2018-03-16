@@ -164,26 +164,26 @@ clear_read_character
 setup_pins
 	STMFD SP!,{lr, r1, r2, r3}
 
-	LDR r1, =0xE002C004			;PINSEl1
-	LDR r2, [r1]
-	MOV r3, #0x0
-	BIC r2, r2, r3
-	STR r2, [r1]
+	LDR r1, =0xE002C004			;PINSEl1 -> r1
+	LDR r2, [r1]				;load contents to r2
+	MOV r3, #0x0				;copy #0 to r3
+	BIC r2, r2, r3				;bitclear r2 masked r3
+	STR r2, [r1]				;store results in r1
 
-	LDR r1, =0xE002C000			;PINSEL0
-	LDR r2, [r1]
-	MOV r3, #0xF00000
-	BIC r2, r2, r3
-	STR r2, [r1]
+	LDR r1, =0xE002C000			;PINSEL0 -> r1
+	LDR r2, [r1]				;Load contents to r2
+	MOV r3, #0xF00000			;copy 0xF00000 to r3
+	BIC r2, r2, r3				;bitclear r2 by mask r3
+	STR r2, [r1]				;store results in r1
 
 	LDR r1, =0xE0028008			;IODIR for Seven-Seg
-	;LDR r2, [r1]
-	LDR r3, =0x26B784
-	STR r3, [r1]
+	;LDR r2, [r1]	
+	LDR r3, =0x26B784			;Load 0x26B784 (for bit manipulation) to r3
+	STR r3, [r1]				;store results to r1
 	
-	LDR r1, =0xE0028018
+	LDR r1, =0xE0028018			
 	LDR r3, =0xF0000
-	STR r3, [r1]
+	STR r3, [r1]				;store contents 0xF0000 to memory at 0xE0028018
  
 	;LDR r1, =0xE0028008			;IODIR for RGBLED
 	;LDR r2, [r1]
